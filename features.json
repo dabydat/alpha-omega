@@ -1,0 +1,36 @@
+{
+  "project": "alpha-omega",
+  "description": "Feature state registry. Structured JSON for state (per Anthropic context engineering: JSON for state data, unstructured text for progress notes).",
+  "features": [
+    {
+      "id": "FEAT-001",
+      "name": "feature-registry",
+      "status": "done",
+      "tier": "T3",
+      "budget_tokens": 8192,
+      "agent": "backend-dev",
+      "spec": "specs/feature-registry.spec.md",
+      "plan": "plans/feature-registry.plan.md",
+      "evals": "scripts/lint-patterns.js",
+      "acceptance": [
+        "AC-1: features.json validates with scripts/features.js",
+        "AC-2: the loop registers and updates feature status at every step"
+      ],
+      "time_estimated_ms": 5000,
+      "time_actual_ms": 6188,
+      "tokens_actual": 8984,
+      "score": 0.94,
+      "retries": 2,
+      "created": "2026-09-10",
+      "last_update": "2026-09-10"
+    }
+  ],
+  "status_lifecycle": [
+    "proposed",
+    "planned",
+    "in_progress",
+    "blocked",
+    "done",
+    "rejected"
+  ]
+}

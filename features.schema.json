@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "alpha-omega Feature Registry",
+  "description": "Formal schema for feature and task tracking. Every model consumes this schema to read and update the status of features. JSON for state, text for progress.",
+  "type": "object",
+  "required": ["project", "features", "status_lifecycle"],
+  "properties": {
+    "project": { "type": "string" },
+    "description": { "type": "string" },
+    "status_lifecycle": {
+      "type": "array",
+      "items": { "type": "string", "enum": ["proposed", "planned", "in_progress", "blocked", "done", "rejected"] }
+    },
+    "features": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "status", "tier", "agent", "spec", "evals", "acceptance", "created", "last_update"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^FEAT-\\d{3}$" },
+          "name": { "type": "string" },
+          "status": { "type": "string", "enum": ["proposed", "planned", "in_progress", "blocked", "done", "rejected"] },
+          "tier": { "type": "string", "enum": ["T1", "T2", "T3", "T3+", "T4"] },
+          "budget_tokens": { "type": "integer" },
+          "agent": { "type": "string" },
+          "spec": { "type": "string" },
+          "plan": { "type": "string", "description": "Reference to the plan produced at loop step 2b (/plan)" },
+          "evals": { "type": "string" },
+          "acceptance": { "type": "array", "items": { "type": "string" } },
+          "time_estimated_ms": { "type": "integer", "description": "Estimated duration set at planning (step 2b)" },
+          "time_actual_ms": { "type": "integer", "description": "Real duration recorded at consolidation (step 6) — updated even when it overran the estimate" },
+          "tokens_actual": { "type": "integer", "description": "Tokens estimated/measured at consolidation" },
+          "score": { "type": "number", "minimum": 0, "maximum": 1, "description": "Judge score at evaluation" },
+          "retries": { "type": "integer", "description": "Retry-different count (step 5)" },
+          "created": { "type": "string", "format": "date" },
+          "last_update": { "type": "string", "format": "date" }
+        }
+      }
+    }
+  }
+}

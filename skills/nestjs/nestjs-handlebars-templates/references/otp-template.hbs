@@ -1,0 +1,37 @@
+<!-- Full OTP Verification Template -->
+{{> header}}
+
+<div class="container">
+  <h1>Account verification</h1>
+
+  {{#if flash}}
+    <div class="alert alert-error">{{flash}}</div>
+  {{/if}}
+
+  <p>A verification code has been sent to the number: <strong>{{params.phone}}</strong></p>
+  <p>The code expires in <strong>{{params.seconds}}</strong> seconds.</p>
+
+  <form method="POST" action="/interaction/{{uid}}/otp">
+    <input type="hidden" name="userId" value="{{params.userId}}">
+
+    <div class="form-group">
+      <label for="otp">Verification code:</label>
+      <input type="text" id="otp" name="otp" required pattern="[0-9]{6}" maxlength="6" autocomplete="off">
+    </div>
+
+    <button type="submit">Verify</button>
+  </form>
+
+  <form method="POST" action="/interaction/{{uid}}/otp/resend">
+    <input type="hidden" name="userId" value="{{params.userId}}">
+    <input type="hidden" name="method" value="sms">
+    <button type="submit" class="link-button">Resend code</button>
+  </form>
+
+  <div class="help-text">
+    <p>Didn't receive the code?</p>
+    <p>Make sure your number is correct and try again.</p>
+  </div>
+</div>
+
+{{> footer}}

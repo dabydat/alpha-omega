@@ -1,0 +1,85 @@
+{
+  "name": "alpha-omega",
+  "version": "1.0.0",
+  "author": { "name": "dabydat", "url": "https://github.com/dabydat" },
+  "language": "en",
+  "ai_org": "opencode",
+  "description": "CONFIG = the control panel. The agent reads this FIRST. It declares which AI-org folder to read (ai_org), which stacks are active (switch.stacks), which MCPs to use (mcp), which files are blocked (blocked_files), which actions are allowed (actions), and which scripts may run (scripts).",
+  "switch": {
+    "meta_prompting": true,
+    "metrics": true,
+    "feature_registry": true,
+    "stacks": ["nestjs"],
+    "components": ["core", "rules", "skills", "evals"],
+    "neurons": ["perceive", "execute", "judge", "stack"]
+  },
+  "mcp": {
+    "servers": [],
+    "message": "No MCP servers configured. Add server names to mcp.servers to enable them."
+  },
+  "blocked_files": [
+    ".env",
+    ".env.*",
+    "secrets.json",
+    "credentials.json",
+    "*.pem",
+    "*.key",
+    "*.p12",
+    "*.pfx"
+  ],
+  "templates": {
+    "files": [
+      "specs/TEMPLATE.md",
+      "features.schema.json",
+      "memory/STATE.md",
+      "memory/CHANGELOG.md",
+      "memory/DECISIONS.md",
+      "memory/NOTIFICATIONS.md"
+    ],
+    "rule": "Read-only reference. NEVER overwrite. SPECS: copy to a NEW file with a new name. MEMORY: the files define the FORMAT only — create your state in your adapter folder (e.g. .opencode/memory/) and read it THERE first, never in memory/."
+  },
+  "scripts": {
+    "lint": true,
+    "test": true,
+    "install": true,
+    "build": true,
+    "routes": true,
+    "budget": true,
+    "metrics": true,
+    "features": true
+  },
+  "budget": {
+    "session_tokens": 24000,
+    "compaction_threshold": 0.8,
+    "max_active_neurons": 3
+  },
+  "actions": {
+    "power_git": {
+      "create_branch": true,
+      "switch_branch": true,
+      "commit": false,
+      "push": false
+    },
+    "power_files": {
+      "read": true,
+      "write": true,
+      "edit": true,
+      "delete": false
+    },
+    "power_execution": {
+      "bash": true,
+      "install_dependencies": true,
+      "run_tests": true,
+      "build": true
+    },
+    "power_network": {
+      "fetch": false,
+      "web_search": false
+    },
+    "power_deploy": {
+      "deploy_staging": false,
+      "deploy_production": false,
+      "rollback": false
+    }
+  }
+}
