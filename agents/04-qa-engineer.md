@@ -92,5 +92,5 @@ Error handling: graceful at every step
 ## Method
 - **Tier:** T2
 - **Budget:** 2048 tokens
-- **Loop:** receive→ route via ROUTING.md §11 → execute → evaluate against the target eval → reinforce in routes.jsonl
+- **Loop:** receive → route via ROUTING.md §11 → execute → evaluate against the target eval → reinforce in routes.jsonl
 - **Eval:** meet the criterion of the knowledge sub-skill

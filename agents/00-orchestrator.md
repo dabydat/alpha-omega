@@ -84,5 +84,5 @@ BLOCKED: [blocker, if any] / NONE
 ## Method
 - **Tier:** T4
 - **Budget:** 32768 tokens
-- **Loop:** receive→ route via ROUTING.md §11 → execute → evaluate against the target eval → reinforce in routes.jsonl
+- **Loop:** receive → route via ROUTING.md §11 → execute → evaluate against the target eval → reinforce in routes.jsonl
 - **Eval:** meet the criterion of the knowledge sub-skill

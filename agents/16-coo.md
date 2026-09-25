@@ -72,5 +72,5 @@ R = Responsible, A = Accountable, C = Consulted, I = Informed
 ## Method
 - **Tier:** T3
 - **Budget:** 8192 tokens
-- **Loop:** receive→ route via ROUTING.md §11 → execute → evaluate against the target eval → reinforce in routes.jsonl
+- **Loop:** receive → route via ROUTING.md §11 → execute → evaluate against the target eval → reinforce in routes.jsonl
 - **Eval:** meet the criterion of the knowledge sub-skill
