@@ -4,22 +4,36 @@
 
 Think of it as a **standard operating procedure (SOP) for an AI coding tool.**
 
-You drop this folder into a project. When you open the project with an AI coding
-tool (opencode, Claude Code, Cursor, Copilot, Gemini), the AI reads these files
-and **stops improvising**. Instead of just doing whatever you type, it follows a
-disciplined process: read the config → understand your request → decompose it →
-plan it → ask you to approve → execute in the right order → verify only if you
-asked.
+Run `install.sh` in a project — it **references** the harness (it doesn't copy it).
+When you open the project with an AI coding tool (opencode, Claude Code, Cursor,
+Copilot, Gemini), the AI reads the gate and **stops improvising**. Instead of just
+doing whatever you type, it follows a disciplined process: read the config →
+understand your request → decompose it → plan it → ask you to approve → execute in
+the right order → verify only if you asked.
 
 **The result:** more consistent, higher-quality code, and fewer wasted tokens
 (it picks the right model/tier per task, and never reads more than it needs).
 
-> It is NOT a new model, and NOT a framework you code against. It's **instructions
-> + a config + a few tiny scripts** that the AI follows. Each AI tool reads **one
-> thin gate entry** (a file) that points to the generic content. opencode and
-> Claude read `AGENTS.md` / `.claude/CLAUDE.md`; Cursor, Copilot and Gemini read their own
-> gate file (`.cursor/rules/nsp-rev.mdc`, `.github/copilot-instructions.md`,
-> `.gemini/GEMINI.md`). No content is auto-registered or duplicated per tool.
+**Who it's for:** developers who use AI coding tools (opencode, Claude Code, Cursor,
+Copilot, Gemini) and want consistent, quality code without burning tokens.
+
+**What it does:** turns a coding AI into a disciplined, token-efficient team that
+follows a clear loop. **What it does NOT do:** it is not a model, not a framework
+you code against, not a CI/CD system, and not a replacement for your project.
+
+> Each project holds a **thin gate** (`AGENTS.md` / `.claude/CLAUDE.md` /
+> `.cursor/rules/nsp-rev.mdc` / …) that reads `.alpha-omega/config.json`, then goes
+> to the **harness source** (where `install.sh` ran) and follows the loop. The
+> harness is **referenced, not copied**.
+
+### TL;DR — quick setup (full steps below)
+
+```bash
+# 1. edit config.json in the harness folder   (set ai_org, stacks, actions, budget)
+# 2. run install.sh into your project
+./install.sh /path/to/my-project
+# 3. open the project with your AI tool → it reads the gate → follows the harness
+```
 
 ---
 
@@ -63,13 +77,13 @@ Each skill belongs to a stack by being inside that stack's folder. That's it.
 
 ## What happens on the first prompt
 
-### Do you need to do something before? **Just 2 things.** Everything else the AI does itself.
+### Do you need to do something before? **Just install + configure.** Everything else the AI does itself.
 
 ```mermaid
 flowchart TD
     subgraph ACTIVATION["① ACTIVATION — the 2 human steps"]
         direction TB
-        A1[1 · Copy the harness to the project<br/>cp -r alpha-omega /path/to/project] --> A2[2 · Edit config.json<br/>set the knobs: ai_org · switch.* · mcp · blocked_files · scripts · actions]
+        A1[1 · Install the harness into the project<br/>./install.sh /path/to/project] --> A2[2 · Edit config.json<br/>set the knobs: ai_org · switch.* · mcp · blocked_files · scripts · actions]
     end
     subgraph PROMPT["② THE FIRST PROMPT — the AI runs this. Each step is governed by a config key (shown in [brackets])"]
         direction TB
@@ -119,7 +133,7 @@ flowchart TD
 | `actions` | what the AI may do, by power (git/files/execution/network/deploy) | P11 — execute (and everywhere it acts) |
 
 **Key points:**
-- **You only do 2 things before** (copy + edit config). No manual state setup.
+- **You only do 2 things before** (install + edit config). No manual state setup.
 - **The AI self-initializes**: if its adapter state is missing, the AI creates it
   (from the `memory/` templates — the format) so it can keep control over time.
 - **Verification is on-demand** (your point 6): lint/tests run only when **you ask**
@@ -178,13 +192,79 @@ delete `features.json` + `features.schema.json`).
 
 ---
 
-## Quick start
+## Setup (do this once per project)
 
-1. **Copy** the harness to the project: `cp -r alpha-omega /path/to/project`.
-2. **Edit `config.json`** — set `ai_org`, `switch.stacks`, `scripts`, `actions`, `budget`.
-3. **Write your first task.** The harness decomposes, routes, plans, executes,
-   and consolidates. It auto-creates its adapter state.
-4. **Request verification when you want it** (e.g. `/lint`, or run tests).
+> ⚠️ **BEFORE you install, edit the harness's `config.json`** (the one in the
+> alpha-omega folder, where `install.sh` lives). `install.sh` copies that config
+> into the new project — so set it once and every project starts already configured.
+
+### Step 0 — Set the harness config (in the alpha-omega folder)
+
+Edit `config.json`:
+
+```json
+{
+  "ai_org": "opencode",                    // your AI tool: opencode | claude | cursor | copilot | gemini
+  "switch": { "stacks": ["nestjs"] },       // your stack(s) → knowledge at skills/<stack>/
+  "actions": { "power_files": { "write": true } },  // what the AI may do
+  "budget": { "session_tokens": 24000 }     // token limit per session
+}
+```
+
+### Step 1 — Install into a project (references the harness, doesn't copy it)
+
+```bash
+cd /path/to/alpha-omega      # the folder where install.sh is
+./install.sh /path/to/my-project
+```
+
+It creates in `my-project`:
+- `.alpha-omega/config.json` — this project's config (copy of step 0).
+- `AGENTS.md` — a thin gate: reads `.alpha-omega/config.json`, then
+  *"goes to the harness"* at the source (where `install.sh` ran).
+- `.opencode/` (or your `ai_org`) with `memory/` — the project's traceability.
+- It also **appends** these created paths to the project's `.gitignore`
+  (so they are **not** committed to GitHub).
+
+### Step 2 — Open the project with your AI tool
+
+Open `my-project` with opencode / Claude Code / Cursor / etc. It **auto-reads the
+gate** (`AGENTS.md` / `CLAUDE.md` / `.cursor/rules/nsp-rev.mdc`) — you don't invoke
+the harness manually. The gate points to `.alpha-omega/config.json` and the source
+harness, and the AI follows the loop.
+
+### Step 3 — Write your first task
+
+> *"Add a GET /users/:id endpoint. EDD: spec, implement, evaluate."*
+
+The harness decomposes → routes → plans (asks you to approve `[A/C/X]`) → executes →
+verifies → consolidates.
+
+### Step 4 — Verify it worked
+
+```bash
+cd /path/to/my-project
+node .alpha-omega/scripts/lint-patterns.js   # quality gate (0 violations = OK)
+```
+
+Check the traceability in `.opencode/memory/STATE.md` (or your `ai_org`).
+
+---
+
+## How the flow works (the mental model)
+
+```
+1. Read .alpha-omega/config.json       ← this project's control panel
+2. Go to the harness (source)          ← the pwd where install.sh ran
+3. Execute the rules it declares       ← loop, routing, agents, skills
+4. Deliver in the project
+5. Leave traceability in <ai_org>/memory/
+```
+
+> The harness is **referenced, not copied** — it lives in one place (where
+> `install.sh` runs). Each project only holds a thin pointer. If the gate already
+> exists, the installer **prepends** alpha-omega (so it takes precedence over any
+> other flow/harness).
 
 ---
 
@@ -219,7 +299,10 @@ power_deploy:      staging ✗  production ✗  rollback ✗
 ## Copy to a new project
 
 ```bash
-cp -r alpha-omega /path/to/new-project/
+./install.sh /path/to/new-project/
 ```
 
-Then edit `config.json` for the project (ai_org, stacks, scripts, actions, budget).
+It reads `ai_org` from `.alpha-omega/config.json` and creates only the **pointer**
+(`.alpha-omega/config.json` + the gate + `<ai_org>/memory/`). It does **not** copy
+the harness — it references it from where `install.sh` runs. Edit
+`.alpha-omega/config.json` in the new project to set its own stack/actions/budget.

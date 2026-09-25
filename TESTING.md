@@ -7,8 +7,8 @@
 
 ## The test prompt (multi-agent)
 
-> *"Agrega un comando `/check` que valide la salud del harness (config JSON válido,
-> lint OK, budget OK). Usa EDD. Coordina con el orquestador."*
+> *"Add a `/check` command that validates the harness health (valid config JSON,
+> lint OK, budget OK). Use EDD. Coordinate with the orchestrator."*
 
 This touches several roles, so the orchestrator routes it to multiple agents.
 
