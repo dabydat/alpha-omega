@@ -1,5 +1,5 @@
 # Event Notifications Log
-> ⚠️ **TEMPLATE (format) — DO NOT MODIFY.** This defines the FORMAT only. Create your state in your adapter folder (e.g. `.opencode/memory/`) and read it THERE first — never in `memory/`.
+> **TEMPLATE (format) — DO NOT MODIFY.** This defines the FORMAT only. Create your state in your adapter folder (e.g. `.opencode/memory/`) and read it THERE first — never in `memory/`.
 
 
 > Track all events, context status, and next actions.

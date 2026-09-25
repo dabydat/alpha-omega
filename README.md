@@ -48,13 +48,14 @@ you code against, not a CI/CD system, and not a replacement for your project.
 | Key | What it does | Example |
 |-----|-------------|---------|
 | `ai_org` | **which ONE AI tool to read.** Only that folder is read. | `"opencode"` |
+| `language_policy` | `follow_user` = answer in the user's language. `force_config` = always use `language`. | `"follow_user"` |
 | `switch.stacks` | **the active stacks** (array). Each stack's knowledge lives at `skills/<stack>/`. | `["nestjs", "react"]` |
 | `switch.components` | which content folders are on (`core`, `rules`, `skills`, `evals`). | `["core","rules","skills","evals"]` |
 | `switch.meta_prompting` | `true` = AI asks context once + shows a plan to approve. `false` = acts directly. | `true` |
 | `switch.feature_registry` | `true` = AI tracks every task in `features.json` (status + metrics). | `true` |
-| `mcp` | **MCP servers to use.** `servers` = list; if empty, a `message` explains. | `{"servers":[],"message":"..."}` |
+| `mcp` | **MCP servers to use.** `servers` = list; `message` = what the AI must do when one is **not** connected (tell you how to connect it, then wait). | `{"servers":["pulsar"],"message":"..."}` |
 | `blocked_files` | **file patterns the AI must NEVER read** (secrets, .env, keys). | `[".env","*.pem","*.key"]` |
-| `scripts` | **which scripts the AI may run** (on/off). `false` = it won't run it. | `{"lint":true,"test":true}` |
+| `scripts` | **which scripts the AI may run** (on/off). Sole gate — independent of `actions`. | `{"lint":true,"test":true}` |
 | `budget` | token limits per session. | `{"session_tokens":24000}` |
 | `actions` | **what the AI may do**, by power (git, files, execution, network, deploy). `true`/`false`. | `{"power_git":{"commit":false}}` |
 
@@ -152,7 +153,8 @@ flowchart TD
 | The control panel (ai_org, stacks, scripts, actions) | `config.json` |
 | Routing (single source: situation → agent + complexity → tier) | `ROUTING.md` |
 | Action control by powers | `actions.md` |
-| State (per adapter; format from `memory/` templates) | your adapter folder (e.g. `.opencode/memory/STATE.md`) |
+| State — **the live one, written by the AI** | your adapter folder (e.g. `.claude/memory/STATE.md`) |
+| State — **the template, never written** | `<harness>/memory/STATE.md` |
 | Generic agent roster (all adapters) | `agents/` |
 | Generic rules (never omit) | `rules/` |
 | Generic commands (what you can run) | `commands/` |
@@ -194,7 +196,7 @@ delete `features.json` + `features.schema.json`).
 
 ## Setup (do this once per project)
 
-> ⚠️ **BEFORE you install, edit the harness's `config.json`** (the one in the
+> **BEFORE you install, edit the harness's `config.json`** (the one in the
 > alpha-omega folder, where `install.sh` lives). `install.sh` copies that config
 > into the new project — so set it once and every project starts already configured.
 
@@ -243,11 +245,14 @@ verifies → consolidates.
 ### Step 4 — Verify it worked
 
 ```bash
-cd /path/to/my-project
-node .alpha-omega/scripts/lint-patterns.js   # quality gate (0 violations = OK)
+cd /path/to/alpha-omega                # the harness — scripts live here, not in the project
+node scripts/lint-patterns.js          # quality gate (0 violations = OK)
 ```
 
-Check the traceability in `.opencode/memory/STATE.md` (or your `ai_org`).
+Check the traceability in `.claude/memory/STATE.md` (or your `ai_org`). That file
+arrives holding only its title and a pointer back to the harness — the AI fills in
+the rest. The format it follows lives in `<harness>/memory/STATE.md`, which stays
+untouched.
 
 ---
 
@@ -287,12 +292,44 @@ ask**: `node scripts/lint-patterns.js` or `/lint`. It only runs if
 ```
 power_git:         create_branch ✓  switch_branch ✓  commit ✗  push ✗
 power_files:       read ✓  write ✓  edit ✓  delete ✗
-power_execution:   bash ✓  install ✓  tests ✓  build ✓
+power_execution:   read_only_search ✓  tests ✓  build ✓  install ✓
+                   mutating_fs ✗  network_egress ✗  db_write ✗  vcs_write ✗
 power_network:     fetch ✗  web_search ✗
 power_deploy:      staging ✗  production ✗  rollback ✗
 ```
 
 **Golden rule:** the CONFIG rules. If an action is `false`, the AI does not do it.
+
+### Powers are grouped by EFFECT, not by tool
+
+`bash: true|false` used to be one switch for two very different things: *looking at
+your code* and *destroying it*. Turning it off to prevent `rm -rf` also blocked
+`grep`, which made the harness unusable and — predictably — got ignored. So it split:
+
+| Power | Covers | Default |
+|---|---|---|
+| `read_only_search` | `grep` `glob` `find` `ls` `cat` `head` `wc` `jq` | ✓ allowed |
+| `run_tests` / `build` / `install_dependencies` | project tooling | ✓ allowed |
+| `mutating_fs` | `rm` `mv` `dd` `truncate` `chmod -R` | ✗ |
+| `network_egress` | `curl` `wget` `nc` `scp` `ssh` | ✗ |
+| `db_write` | `DROP` `TRUNCATE` `DELETE FROM` | ✗ |
+| `vcs_write` | `commit` `push` `reset --hard` `clean` | ✗ |
+
+Plus a `denylist` that is refused **regardless of any power above**, even if you ask.
+
+> **`read_only_search` never overrides `blocked_files`.** A search is harmless
+> until you point it at a secret: `grep KEY .env` exfiltrates exactly as much as
+> `cat .env`. Search freely — never at a blocked path.
+
+### Scripts are not shell access
+
+`node scripts/<name>.js` is gated by `scripts.<name>` **and nothing else**. These are
+deterministic (~0 tokens, fixed output), so they are never subject to
+`power_execution` — a locked-down execution power does not disable them.
+
+**Invariant:** `switch.metrics: true` ⇒ `scripts.metrics: true` (same for
+`feature_registry`/`features`). Breaking it is a config error the AI must report,
+not silently skip.
 
 ---
 

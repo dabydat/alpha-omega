@@ -1,5 +1,5 @@
 # memory/STATE.md — Single state file
-> ⚠️ **TEMPLATE (format) — DO NOT MODIFY.** This defines the FORMAT only. Create your state in your adapter folder (e.g. `.opencode/memory/`) and read it THERE first — never in `memory/`.
+> **TEMPLATE (format) — DO NOT MODIFY.** This defines the FORMAT only. Create your state in your adapter folder (e.g. `.opencode/memory/`) and read it THERE first — never in `memory/`.
 
 
 > The agent reads this on start and writes it on consolidation. All transient

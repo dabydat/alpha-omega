@@ -1,6 +1,6 @@
 # Feature Spec Template
 
-> ⚠️ **TEMPLATE — DO NOT MODIFY.** Copy this to a NEW file with a new name
+> **TEMPLATE — DO NOT MODIFY.** Copy this to a NEW file with a new name
 > (e.g. `/create-spec user-authentication` → `specs/user-authentication-spec.md`).
 > Never overwrite this template.
 

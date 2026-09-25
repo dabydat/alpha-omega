@@ -30,12 +30,32 @@
 | `delete` | `false` | **FORBIDDEN** to delete files |
 
 ### Power of EXECUTION
+
+Grouped by **effect**, not by tool name. `bash` as a single flag is obsolete: it
+conflated *reading your code* with *destroying it*, so switching it off to stop
+`rm -rf` also blocked `grep` — which made the harness unusable and got it ignored.
+
 | Action | Value | Effect |
 |--------|-------|--------|
-| `bash` | `true` | May run bash |
-| `install_dependencies` | `true` | May install deps |
+| `read_only_search` | `true` | May run `grep` `glob` `find` `ls` `cat` `head` `wc` `jq` |
 | `run_tests` | `true` | May run tests |
 | `build` | `true` | May build |
+| `install_dependencies` | `true` | May install deps |
+| `mutating_fs` | `false` | **FORBIDDEN** `rm` `mv` `dd` `truncate` `chmod -R` |
+| `network_egress` | `false` | **FORBIDDEN** `curl` `wget` `nc` `scp` `ssh` |
+| `db_write` | `false` | **FORBIDDEN** `DROP` `TRUNCATE` `DELETE FROM` |
+| `vcs_write` | `false` | **FORBIDDEN** `commit` `push` `reset --hard` `clean` |
+| `denylist` | list | Refused **regardless of every power above**, even if asked directly |
+
+> **`read_only_search` never overrides `blocked_files`.** A search is harmless until
+> you aim it at a secret: `grep KEY .env` exfiltrates exactly as much as `cat .env`.
+
+### Scripts are NOT a power
+
+`node scripts/<name>.js` is gated by `config.json → scripts.<name>` and by nothing
+else. They are deterministic harness tooling (~0 tokens, fixed output), so
+`power_execution` has no say over them — a locked-down execution profile does not
+excuse skipping them.
 
 ### Power of NETWORK
 | Action | Value | Effect |
@@ -59,8 +79,8 @@ The harness reads `config.json` and applies `power_git`:
 | Requested action | config value | Result |
 |------------------|--------------|--------|
 | Create branch `feature-x` | `create_branch = true` | ✅ It does it |
-| Commit | `commit = false` | ⛔ **Stops** |
-| Push | `push = false` | ⛔ **Stops** |
+| Commit | `commit = false` |**Stops** |
+| Push | `push = false` |**Stops** |
 
 **Agent response:**
 > "I created branch `feature-x`. I cannot commit or push because

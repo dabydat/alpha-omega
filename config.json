@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "author": { "name": "dabydat", "url": "https://github.com/dabydat" },
   "language": "en",
-  "ai_org": "opencode",
+  "language_policy": "follow_user",
+  "_language_policy": "follow_user = reply in the language the user writes in; `language` is only the fallback when the user's language is ambiguous (e.g. empty prompt, code-only). Set to 'force_config' to always use `language`.",
+  "ai_org": "claude",
   "description": "CONFIG = the control panel. The agent reads this FIRST. It declares which AI-org folder to read (ai_org), which stacks are active (switch.stacks), which MCPs to use (mcp), which files are blocked (blocked_files), which actions are allowed (actions), and which scripts may run (scripts).",
   "switch": {
     "meta_prompting": true,
@@ -15,7 +17,7 @@
   },
   "mcp": {
     "servers": [],
-    "message": "No MCP servers configured. Add server names to mcp.servers to enable them."
+    "message": "Check every server in `servers` is connected BEFORE planning work that needs it. If one is missing or unauthenticated: do NOT improvise, do NOT work around it, do NOT ask the user what to do. Tell them how to connect it and wait: (1) `claude mcp add --transport http <name> <url>`, (2) restart the session so the config is picked up, (3) complete the OAuth flow if the server asks for it. Then resume the task from where it stopped."
   },
   "blocked_files": [
     ".env",
@@ -36,9 +38,16 @@
       "memory/DECISIONS.md",
       "memory/NOTIFICATIONS.md"
     ],
-    "rule": "Read-only reference. NEVER overwrite. SPECS: copy to a NEW file with a new name. MEMORY: the files define the FORMAT only — create your state in your adapter folder (e.g. .opencode/memory/) and read it THERE first, never in memory/."
+    "rule": "Read-only reference. NEVER overwrite. SPECS: copy to a NEW file with a new name. MEMORY: see templates.memory_boundary.",
+    "memory_boundary": {
+      "immutable": "<harness>/memory/*.md — the TEMPLATE. Defines the FORMAT only. Never read as state, never written.",
+      "live": "<project>/<ai_org>/memory/*.md (e.g. .claude/memory/STATE.md) — YOUR state. Read it THERE first, write it THERE on consolidation. Same filenames, same path as installed: it never moves.",
+      "install_contract": "install.sh copies ONLY the title line + the traceability pointer into the project. The template body (warnings, dummy sections, next steps) is NOT copied — a project state file that carries 'DO NOT MODIFY' is a broken install."
+    }
   },
   "scripts": {
+    "_authority": "scripts.<name> is the SOLE gate for running `node scripts/<name>.js`. These are deterministic harness tooling (~0 tokens, fixed output) — they are NEVER subject to actions.power_execution. A disabled bash/shell power does NOT disable them.",
+    "_invariant": "switch.metrics=true => scripts.metrics=true. switch.feature_registry=true => scripts.features=true. Breaking this is a CONFIG ERROR: declare the conflict to the user and stop. Never resolve it by silently skipping the obligation.",
     "lint": true,
     "test": true,
     "install": true,
@@ -67,10 +76,23 @@
       "delete": false
     },
     "power_execution": {
-      "bash": true,
-      "install_dependencies": true,
+      "_model": "Powers are grouped by EFFECT, not by tool name. Reading and searching are safe. Mutating the filesystem, sending data out, and writing to a database are not. `bash` as a single boolean is obsolete: it conflated both.",
+      "read_only_search": true,
+      "_read_only_search": "Allows grep, glob, find, ls, cat, head, tail, wc, jq — read-only invocations only. HARD LIMIT: it NEVER overrides blocked_files. A search whose target is a blocked file is forbidden even though it only reads (`grep KEY .env` exfiltrates just as well as `cat .env`).",
       "run_tests": true,
-      "build": true
+      "build": true,
+      "install_dependencies": true,
+      "mutating_fs": false,
+      "network_egress": false,
+      "db_write": false,
+      "vcs_write": false,
+      "denylist": [
+        "rm -rf", "dd", "mkfs", "truncate", "chmod -R", "chown -R",
+        "DROP", "TRUNCATE", "DELETE FROM", "ALTER TABLE",
+        "git reset --hard", "git clean", "git push --force",
+        "curl -d", "curl -X POST", "wget --post", "nc", "scp", "ssh", "base64 -d"
+      ],
+      "_denylist": "Blocked regardless of any power above. A command matching an entry is refused, not negotiated — even when the user asks. Escalate to the user instead of running it."
     },
     "power_network": {
       "fetch": false,

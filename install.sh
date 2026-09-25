@@ -61,7 +61,7 @@ COMPONENTS="$(read_cfg "$MANIFEST" | sed -n 3p)"
 echo "alpha-omega -> $TARGET  (ai_org=$AI_ORG  stacks=$STACKS  harness=$HARNESS_DIR)"
 
 # 3. Adapter directory per ai_org + memory/ (the project's traceability)
-# Each memory file gets a note: follow the harness pattern + the harness source path.
+# Each project memory file gets ONLY: the title line + where to take the format from.
 copy_memory() {
   local src="$1" dst="$2"
   if [ -e "$dst" ]; then
@@ -70,7 +70,11 @@ copy_memory() {
   fi
   mkdir -p "$(dirname "$dst")"
   local tmp; tmp="$(mktemp)"
-  { sed -n '1p' "$src"; echo; echo "> Project traceability. To write here, follow the harness pattern (config.json → templates.files). Harness source: $HARNESS_DIR"; echo; sed -n '2,$p' "$src"; } > "$tmp"
+  # Title + traceability pointer ONLY. The template body (the "DO NOT MODIFY"
+  # banner, dummy sections, harness next-steps) deliberately stays behind: this
+  # file is the project's LIVE state, and stamping a template warning on it made
+  # agents treat their own state as read-only. Format lives in $HARNESS_DIR/memory/.
+  { sed -n '1p' "$src"; echo; echo "> Project traceability. To write here, follow the harness pattern (config.json → templates.files). Harness source: $HARNESS_DIR"; } > "$tmp"
   mv "$tmp" "$dst"
   echo "  + ${dst#$TARGET/}"
 }
@@ -99,21 +103,48 @@ write_gate() {
 
 This project uses the **alpha-omega** harness.
 
-## How it works
-1. **Read `.alpha-omega/config.json` FIRST** — it is this project control panel.
-2. **Go to the harness** at `__HARNESS_SRC__` (the pwd where `install.sh` was run) and
-   execute the rules it declares (stacks, components, actions, budget, blocked_files,
-   templates). The harness content is there: the loop (`GUIDE.md` §2), routing
-   (`ROUTING.md` §11), agents, skills, rules, commands, neurons.
-3. **Deliver in the project**, then leave the traceability in your adapter's
-   `memory/` (e.g. `.opencode/memory/STATE.md`).
+## The path — in order, every prompt. No step is optional.
+
+The harness lives at `__HARNESS_SRC__` (the pwd where `install.sh` was run).
+Paths below are relative to it, except the config, which is this project's.
+
+1. `.alpha-omega/config.json` — blocked_files, actions, scripts, mcp, switch.
+   What is `false` does not happen. A declared MCP that is not connected stops the task.
+2. `rules/00-llm-algorithm.md` — priority #1. Zero emojis. Never invent a number.
+3. `GUIDE.md` §1 — meta-prompt, language_policy, metrics, feature registry.
+4. `<ai_org>/memory/STATE.md` in THIS project — your live state. Read it before planning.
+5. `ROUTING.md` §11 — split the prompt into sub-acts, route each one, check the budget.
+6. `agents/<role>.md` — the role that fires, including its "Never omit" section.
+7. **PLAN + gate `[A] / [C] / [X]`** — present it and WAIT. No approval, no execution.
+8. Execute in the project. Read before writing. Verify against the environment.
+9. Consolidate: `STATE.md`, `routes.jsonl`, `features.json`.
+
+Steps 1-6 are reading and cost almost nothing. Step 7 is where you stop.
+
+If something did not get done, you either skipped it or nobody told you. This list
+removes the second excuse: everything you owe is on it, in order. Skipping is now
+the only remaining failure mode, and it is yours.
+
+Beyond this list, read only the section that applies: `GUIDE.md` §2 for the loop,
+`protocol.md` only when extending. Never a whole file "just in case".
 
 Throughout the harness, **`config.json` means `.alpha-omega/config.json`**.
 
 ## Golden rule
 If the CONFIG does not allow it, it is not done. Never overwrite a template
-(`config.json → templates.files`): SPECS → copy to a new file; MEMORY → create
-your state in your adapter folder and read it THERE first.
+(`config.json → templates.files`): SPECS → copy to a new file.
+
+**MEMORY — two locations, one immutable:**
+- `__HARNESS_SRC__/memory/*.md` → the TEMPLATE (format only, never written).
+- `<this project>/<ai_org>/memory/*.md` → **your live state.** Read it there first,
+  write it there on consolidation. It never moves.
+
+## Powers
+`actions.power_execution` is grouped by EFFECT, not by tool: `read_only_search`
+(grep/glob/find — allowed) is separate from `mutating_fs`, `network_egress`,
+`db_write` and `vcs_write`. `read_only_search` NEVER overrides `blocked_files`.
+`scripts.*` is the sole gate for `node scripts/<name>.js` — deterministic harness
+tooling, never subject to `power_execution`.
 GATE
   sed "s|__HARNESS_SRC__|$HARNESS_DIR|g" "$tmp" > "$tmp.2" && mv "$tmp.2" "$tmp"
   if [ -f "$dest" ]; then

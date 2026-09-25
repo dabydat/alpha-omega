@@ -7,8 +7,12 @@
 
 ## 1. On receiving each task (per switch.meta_prompting)
 
-**Language:** ALL your communication (questions, plans, outputs, memory/STATE.md) is
-done in the language declared in `config.json` (`language`). No exceptions.
+**Language:** governed by `config.json → language_policy`.
+- `follow_user` (default): reply in the language the user writes in. `language` is
+  the fallback ONLY when the user's language is ambiguous (empty or code-only prompt).
+- `force_config`: always use `config.json → language`, whatever the user writes.
+
+Never leave this to taste: check the key.
 
 **If `switch.meta_prompting = true`** (default), with EACH user prompt:
 
@@ -41,6 +45,13 @@ formal plan (fast mode, no gate).
    formulas in protocol.md; canonical example: examples/metrics.md).
 6. Validate with `node scripts/metrics.js` — demonstrated, not assumed.
 If false: you measure nothing.
+
+> **Scripts are deterministic tooling, not shell access.** Every `node scripts/<n>.js`
+> is gated by `scripts.<n>` and by NOTHING else — it is never subject to
+> `actions.power_execution`. A restricted execution power does not excuse you from
+> running them. And if `switch.metrics=true` while `scripts.metrics=false`
+> (same for `feature_registry`/`features`), that is a **CONFIG ERROR**: declare the
+> conflict to the user and stop. Never resolve it by dropping the obligation in silence.
 
 **Feature registry (`features.json`):** if `switch.feature_registry` is true
 (default), EVERY task you receive creates an entry (proposed at /meta). The
@@ -94,8 +105,19 @@ ACT -> META-PROMPT -> 1. PERCEIVE -> 2. ROUTE -> 3. PLAN -> 4. FIRE
 
 ## 3. Where and how to store memory (mandatory)
 
-**A single file: `memory/STATE.md`.** Nothing more. It is written AT THE END of each task,
-never during. Format:
+**A single file — but be precise about WHICH copy:**
+
+| Path | What it is | You may |
+|---|---|---|
+| `<harness>/memory/STATE.md` | the TEMPLATE (format) | read for format · **never write** |
+| `<project>/<ai_org>/memory/STATE.md` | **your live state** | read FIRST · **write on consolidation** |
+
+Your state file is the one inside the project, at the path `install.sh` created.
+**It does not move.** If it still carries the template's `DO NOT MODIFY` banner,
+the install copied too much — strip it to the title + traceability pointer and write
+your state there anyway. Do not relocate it, do not create a second one.
+
+It is written AT THE END of each task, never during. Format:
 
 ```markdown
 ## Status
@@ -131,8 +153,14 @@ Memory rules:
 9. Do NOT negotiate between agents: routing is deterministic.
 10. Do NOT load knowledge that did not fire: read the exact neuron, just-in-time.
 11. Do NOT overwrite a template (`config.json → templates.files`). SPECS → copy
-    it to a new file. MEMORY → defines the FORMAT only: create your state in your
-    adapter folder (e.g. `.opencode/memory/`) and read it THERE first, never in `memory/`.
+    it to a new file. MEMORY → only `<harness>/memory/` is immutable; the copy in
+    your adapter folder IS your state (§3) — read it first and write it there.
+12. Do NOT skip §1 of this file. The gate's "read only what you need" never applies
+    to it: no META-PROMPT and no `[A]/[C]/[X]` gate ⇒ the deliverable is invalid.
+13. Do NOT treat `scripts.*` as shell access. They are gated by `scripts.<name>`
+    alone; `actions.power_execution` has no say over them.
+14. Do NOT read a blocked file THROUGH a search. `read_only_search` never overrides
+    `blocked_files`: `grep KEY .env` exfiltrates exactly as much as `cat .env`.
 
 ---
 
