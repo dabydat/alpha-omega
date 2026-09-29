@@ -92,6 +92,36 @@ if [ -n "$ADAPTER" ]; then
     [ -f "$HARNESS_DIR/memory/$f" ] && copy_memory "$HARNESS_DIR/memory/$f" "$TARGET/$ADAPTER/memory/$f"
   done
   echo "  + $ADAPTER/memory/ (project traceability)"
+
+  # Feature registry + routing log scaffold, same idempotency as copy_memory
+  # (skip if already present). features.schema.json is copied verbatim — it is
+  # a schema, not live state, so the "never overwrite a template" rule does not
+  # prune it like copy_memory prunes STATE.md's body. features.json is seeded
+  # EMPTY and stamped with this project's own name — never the harness's own
+  # FEAT-001 entries. routes.jsonl starts empty; point ROUTES_FILE at this path
+  # when running scripts/routes.js from inside the project.
+  if [ -f "$HARNESS_DIR/features.schema.json" ] && [ ! -e "$TARGET/$ADAPTER/features.schema.json" ]; then
+    cp "$HARNESS_DIR/features.schema.json" "$TARGET/$ADAPTER/features.schema.json"
+    echo "  + $ADAPTER/features.schema.json"
+  fi
+  if [ ! -e "$TARGET/$ADAPTER/features.json" ]; then
+    PROJECT_NAME="$(basename "$TARGET")"
+    tmp="$(mktemp)"
+    cat > "$tmp" <<FEATURES
+{
+  "project": "$PROJECT_NAME",
+  "description": "Feature state registry. Structured JSON for state (per Anthropic context engineering: JSON for state data, unstructured text for progress notes).",
+  "features": [],
+  "status_lifecycle": ["proposed", "planned", "in_progress", "blocked", "done", "rejected"]
+}
+FEATURES
+    mv "$tmp" "$TARGET/$ADAPTER/features.json"
+    echo "  + $ADAPTER/features.json"
+  fi
+  if [ ! -e "$TARGET/$ADAPTER/routes.jsonl" ]; then
+    : > "$TARGET/$ADAPTER/routes.jsonl"
+    echo "  + $ADAPTER/routes.jsonl"
+  fi
 fi
 
 # 4. Thin gate at the project root -> read .alpha-omega/config.json; harness = $HARNESS_DIR
